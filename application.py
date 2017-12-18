@@ -1,7 +1,9 @@
 import collections
 import datetime
+import os
 import tkinter as tk
 from tkinter import messagebox, ttk
+from tkinter.filedialog import askdirectory
 
 import pandas as pd
 
@@ -58,7 +60,13 @@ class MyApplication(object):
         self.default_max_transfer_value.insert(tk.END, '10000')
         self.default_max_transfer_value.grid(column=1, row=row)
 
-    def init_person_detail_entries(self, row=5):
+        row = 4
+        self.folder = tk.StringVar()
+        ttk.Label(self.root, text="保存excel的工作文件夹路径:").grid(row=row, column=0)
+        ttk.Entry(self.root, textvariable=self.folder, width=60).grid(row=row, column=1)
+        ttk.Button(self.root, text="选择", command=self._select_folder).grid(row=row, column=2)
+
+    def init_person_detail_entries(self, row=6):
         # 是否歪果仁
         ttk.Label(self.root, text="是否歪果仁(肯定不导出)").grid(column=0, row=row)
         tk_bool = tk.StringVar()
@@ -111,7 +119,7 @@ class MyApplication(object):
         self.selected_person = None
         self.salary_dict = dict()
 
-    def init_combobox(self, row=4):
+    def init_combobox(self, row=5):
         ttk.Label(self.root, text="你选中的童鞋是").grid(column=0, row=row)
         tk_string = tk.StringVar()
         person_chosen = ttk.Combobox(self.root, width=10, textvariable=tk_string)
@@ -231,7 +239,14 @@ class MyApplication(object):
         self._refresh_salary_table(salary_instance=new_salary_instance)
 
     def _export_single_excel(self, *args, **kwargs):
-        result = messagebox.askokcancel('提示', "你真的要生成{}的薪酬excel么".format(self.selected_person))
+        folder = self.folder.get()
+        print(folder)
+        file_path = os.path.join(folder, "{}年{}月薪酬详情表格{}.xlsx".format(
+            self.default_year.get(),
+            self.default_month.get(),
+            self.selected_person))
+        result = messagebox.askokcancel('提示', "你真的要生成{}的薪酬excel么\n{}的excel将会存储在:\n" +
+                                        "{}".format(self.selected_person, self.selected_person, file_path))
         if result:
             columns = ["编号", "姓名", "合计款项", "正式\试用期工资占比", "本周工作日", "出勤天数", "本月应收款项",
                        "补贴", "报销", "工资+补贴+报销", "社保减扣", "公积金减扣",
@@ -246,9 +261,7 @@ class MyApplication(object):
                     data_dict[column] = [salary_dict.get(column)]
             df = pd.DataFrame(data_dict)
 
-            writer = pd.ExcelWriter("{}年{}月薪酬详情表格{}.xlsx".format(self.default_year.get(),
-                                                                 self.default_month.get(),
-                                                                 self.selected_person), engine='xlsxwriter')
+            writer = pd.ExcelWriter(file_path, engine='xlsxwriter')
             df.to_excel(writer, sheet_name='Sheet1', index=False)
             worksheet = writer.sheets['Sheet1']
             for i, column in enumerate(columns):
@@ -265,6 +278,10 @@ class MyApplication(object):
         entry.insert(tk.END, new_value)
         if readonly:
             entry["state"] = 'readonly'
+
+    def _select_folder(self, *args, **kwargs):
+        folder = askdirectory()
+        self.folder.set(folder)
 
 
 if __name__ == '__main__':
