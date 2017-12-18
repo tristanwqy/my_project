@@ -1,6 +1,10 @@
-from cx_Freeze import setup, Executable
+import sys
+
+from cx_Freeze import Executable, setup
 
 base = None
+if sys.platform == "win32":
+    base = "Win32GUI"
 
 executables = [Executable("application.py", base=base)]
 
