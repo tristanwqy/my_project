@@ -62,8 +62,8 @@ class MyApplication(object):
 
         row = 4
         self.folder = tk.StringVar()
-        ttk.Label(self.root, text="保存excel的工作文件夹路径:").grid(row=row, column=0)
-        ttk.Entry(self.root, textvariable=self.folder, width=60).grid(row=row, column=1)
+        ttk.Label(self.root, text="保存excel的文件夹:").grid(row=row, column=0)
+        ttk.Entry(self.root, textvariable=self.folder, width=12).grid(row=row, column=1)
         ttk.Button(self.root, text="选择", command=self._select_folder).grid(row=row, column=2)
 
     def init_person_detail_entries(self, row=6):
@@ -245,8 +245,7 @@ class MyApplication(object):
             self.default_year.get(),
             self.default_month.get(),
             self.selected_person))
-        result = messagebox.askokcancel('提示', "你真的要生成{}的薪酬excel么\n{}的excel将会存储在:\n" +
-                                        "{}".format(self.selected_person, self.selected_person, file_path))
+        result = messagebox.askokcancel('提示', "你真的要生成{}的薪酬excel么\n{}的excel将会存储在:\n{}".format(self.selected_person, self.selected_person, file_path))
         if result:
             columns = ["编号", "姓名", "合计款项", "正式\试用期工资占比", "本周工作日", "出勤天数", "本月应收款项",
                        "补贴", "报销", "工资+补贴+报销", "社保减扣", "公积金减扣",
