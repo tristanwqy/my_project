@@ -15,7 +15,7 @@ if sys.platform == "win32":
 
 executables = [Executable("application.py", base=base)]
 
-packages = ["idna"]
+packages = ["numpy"]
 options = {
     'build_exe': {
         "includes":      includes,
