@@ -1,6 +1,7 @@
 import collections
+import datetime
 import tkinter as tk
-from tkinter import ttk
+from tkinter import messagebox, ttk
 
 import pandas as pd
 
@@ -28,12 +29,12 @@ class MyApplication(object):
         default_year_label = ttk.Label(self.root, text="年:")
         default_year_label.grid(column=0, row=row)
         self.default_year = ttk.Entry(self.root, width=12)
-        self.default_year.insert(tk.END, '2017')
+        self.default_year.insert(tk.END, datetime.datetime.now().year)
         self.default_year.grid(column=1, row=row)
         default_month_label = ttk.Label(self.root, text="月:")
         default_month_label.grid(column=2, row=row)
         self.default_month = ttk.Entry(self.root, width=12)
-        self.default_month.insert(tk.END, '11')
+        self.default_month.insert(tk.END, datetime.datetime.now().month)
         self.default_month.grid(column=3, row=row)
 
         row = 1
@@ -230,28 +231,30 @@ class MyApplication(object):
         self._refresh_salary_table(salary_instance=new_salary_instance)
 
     def _export_single_excel(self, *args, **kwargs):
-        columns = ["编号", "姓名", "合计款项", "正式\试用期工资占比", "本周工作日", "出勤天数", "本月应收款项",
-                   "补贴", "报销", "工资+补贴+报销", "社保减扣", "公积金减扣",
-                   "基础薪金", "税前工资", "代扣个人所得税", "实发转账工资", "实发报销工资", "实发保险", "合计金额"]
-        data_dict = collections.OrderedDict()
-        salary_instance = self.salary_dict[self.selected_person]
-        salary_dict = salary_instance.export()
-        for column in columns:
-            if column in data_dict:
-                data_dict[column].append(salary_dict.get(column))
-            else:
-                data_dict[column] = [salary_dict.get(column)]
-        df = pd.DataFrame(data_dict)
+        result = messagebox.askokcancel('提示', "你真的要生成{}的薪酬excel么".format(self.selected_person))
+        if result:
+            columns = ["编号", "姓名", "合计款项", "正式\试用期工资占比", "本周工作日", "出勤天数", "本月应收款项",
+                       "补贴", "报销", "工资+补贴+报销", "社保减扣", "公积金减扣",
+                       "基础薪金", "税前工资", "代扣个人所得税", "实发转账工资", "实发报销工资", "实发保险", "合计金额"]
+            data_dict = collections.OrderedDict()
+            salary_instance = self.salary_dict[self.selected_person]
+            salary_dict = salary_instance.export()
+            for column in columns:
+                if column in data_dict:
+                    data_dict[column].append(salary_dict.get(column))
+                else:
+                    data_dict[column] = [salary_dict.get(column)]
+            df = pd.DataFrame(data_dict)
 
-        writer = pd.ExcelWriter("{}年{}月薪酬详情表格{}.xlsx".format(self.default_year.get(),
-                                                             self.default_month.get(),
-                                                             self.selected_person), engine='xlsxwriter')
-        df.to_excel(writer, sheet_name='Sheet1', index=False)
-        worksheet = writer.sheets['Sheet1']
-        for i, column in enumerate(columns):
-            width = max(len(column) * 2, 10)
-            worksheet.set_column(firstcol=i, lastcol=i, width=width)
-        writer.save()
+            writer = pd.ExcelWriter("{}年{}月薪酬详情表格{}.xlsx".format(self.default_year.get(),
+                                                                 self.default_month.get(),
+                                                                 self.selected_person), engine='xlsxwriter')
+            df.to_excel(writer, sheet_name='Sheet1', index=False)
+            worksheet = writer.sheets['Sheet1']
+            for i, column in enumerate(columns):
+                width = max(len(column) * 2, 10)
+                worksheet.set_column(firstcol=i, lastcol=i, width=width)
+            writer.save()
 
     def _update_entry(self, entry, new_value):
         readonly = str(entry["state"]) == 'readonly'
