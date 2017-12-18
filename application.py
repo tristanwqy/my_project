@@ -15,7 +15,8 @@ class MyApplication(object):
         self.root = tk.Tk()
         self.root.geometry("1920x1080")
         self.root.title("随便试试")
-        self.persons = ["何宛余", "杨小荻", "李春", "郑夏丽", "魏启赟", "曾古", "邓燊", "孔明"]
+        self.persons = ["何宛余", "杨小荻", "李春", "郑夏丽", "魏启赟", "曾古", "邓燊", "孔明", "Jackie"]
+        self.table_edited = True
         self.init_data()
         self.init_app()
         self.root.mainloop()
@@ -25,6 +26,7 @@ class MyApplication(object):
         self.init_global_data_entry()
         self.init_button()
         self.init_person_detail_entries()
+        self.init_info()
 
     def init_global_data_entry(self):
         row = 0
@@ -82,7 +84,7 @@ class MyApplication(object):
                             "pension", "reimbursement", "real_total_salary", "yibao_level", "social_security_total", "housing_fund_rate", "housing_fund",
                             "base_salary", "salary_for_tax", "tax", "transfer_salary", "transfer_reimbursement", "transfer_insurance", "transfer_total"]
 
-        self.read_only_columns = ["name", "working_day", "real_total_salary", "social_security_total", "housing_fund", "salary_for_tax", "tax",
+        self.read_only_columns = ["name", "real_salary", "working_day", "real_total_salary", "social_security_total", "housing_fund", "salary_for_tax", "tax",
                                   "transfer_insurance", "transfer_total"]
 
         max_column_per_line = 12
@@ -97,7 +99,7 @@ class MyApplication(object):
             setattr(self, self.eng_columns[i], entry)
             entry.insert(tk.END, "0")
             entry.grid(column=this_column, row=this_row + 1)
-            # entry.bind("<KeyRelease>", self._bind_table_to_salary_instance)
+            entry.bind("<KeyRelease>", self._table_changed)
 
     def init_button(self, row=10):
         self.recalculate_button = ttk.Button(self.root, text="重新计算", command=self._bind_table_to_salary_instance)
@@ -116,6 +118,16 @@ class MyApplication(object):
         #     self.export_all_excel_button["state"] = 'disabled'
         # self.export_all_excel_button.grid(column=2, row=row)
 
+    def init_info(self):
+        info1 = ttk.Entry(self.root, width=80)
+        info1.insert(tk.END, "社保计算方式参考: http://news.vobao.com/zhuanti/885553609845687774.shtml")
+        info1["state"] = 'readonly'
+        info1.grid(column=0, row=11, columnspan=8)
+        info2 = ttk.Entry(self.root, width=80)
+        info2.insert(tk.END, "个人所得税计算参考：http://www.gerensuodeshui.cn/")
+        info2["state"] = 'readonly'
+        info2.grid(column=0, row=12, columnspan=8)
+
     def init_data(self):
         self.selected_person = None
         self.salary_dict = dict()
@@ -131,41 +143,50 @@ class MyApplication(object):
         self.person_chosen.bind("<<ComboboxSelected>>", self._update_person)
 
     def _update_person(self, event):
-        self.selected_person = self.person_chosen.get()
-        print("被选中的人是" + self.selected_person)
-        # 更新名字
-        self._update_entry(entry=self.name,
-                           new_value=self.selected_person)
-        # 按钮启用
-        self.recalculate_button["state"] = 'active'
-        self.export_single_excel_button["state"] = 'active'
-        # self.export_all_excel_button["state"] = 'active'
-        if self.selected_person not in self.salary_dict:
-            if self.selected_person.lower() in ["jakie", "孔明"]:
-                self.is_waiguoren.set("是")
-            else:
-                self.is_waiguoren.set("否")
-            is_chinese = self.is_waiguoren.get() == "否"
-            salary_instance = SalaryCalculator(default_max_transfer_value=float(self.default_max_transfer_value.get()),
-                                               uid="编号别忘了啦",
-                                               name=self.selected_person,
-                                               is_chinese=is_chinese,
-                                               salary=30000,
-                                               salary_rate=1,
-                                               working_day=int(self.default_working_day.get()),
-                                               present_working_day=int(self.default_working_day.get()),
-                                               base_salary=10400,
-                                               pension=5100,
-                                               reimbursement=0,
-                                               yibao_level=2,
-                                               housing_fund_rate=0.05,
-                                               social_security_base=float(self.default_salary.get()),
-                                               transfer_reimbursement=10000)
-            self.salary_dict[self.selected_person] = salary_instance
-            self._refresh_salary_table(salary_instance)
+        result = True
+        if self.table_edited and self.selected_person:
+            result = messagebox.askokcancel("提示", "{}的表格被修改过，但是并未重新计算并导出，是否立即跳转？".format(self.selected_person))
+        if not result:
+            # 回滚
+            self.person_chosen.set(self.selected_person)
         else:
-            salary_instance = self.salary_dict[self.selected_person]
-            self._refresh_salary_table(salary_instance)
+            self.selected_person = self.person_chosen.get()
+            print("被选中的人是" + self.selected_person)
+            # 更新名字
+            self._update_entry(entry=self.name,
+                               new_value=self.selected_person)
+            # 把表单状态改为编辑完成
+            self.table_edited = False
+            # 按钮启用
+            self.recalculate_button["state"] = 'active'
+            self.export_single_excel_button["state"] = 'active'
+            # self.export_all_excel_button["state"] = 'active'
+            if self.selected_person not in self.salary_dict:
+                if self.selected_person.lower() in ["jakie", "孔明"]:
+                    self.is_waiguoren.set("是")
+                else:
+                    self.is_waiguoren.set("否")
+                is_chinese = self.is_waiguoren.get() == "否"
+                salary_instance = SalaryCalculator(default_max_transfer_value=float(self.default_max_transfer_value.get()),
+                                                   uid="编号别忘了啦",
+                                                   name=self.selected_person,
+                                                   is_chinese=is_chinese,
+                                                   salary=30000,
+                                                   salary_rate=1,
+                                                   working_day=int(self.default_working_day.get()),
+                                                   present_working_day=int(self.default_working_day.get()),
+                                                   base_salary=10400,
+                                                   pension=5100,
+                                                   reimbursement=0,
+                                                   yibao_level=2,
+                                                   housing_fund_rate=0.05,
+                                                   social_security_base=float(self.default_salary.get()),
+                                                   transfer_reimbursement=10000)
+                self.salary_dict[self.selected_person] = salary_instance
+                self._refresh_salary_table(salary_instance)
+            else:
+                salary_instance = self.salary_dict[self.selected_person]
+                self._refresh_salary_table(salary_instance)
 
     def _refresh_salary_table(self, salary_instance):
         """
@@ -203,6 +224,7 @@ class MyApplication(object):
                "base_salary", "salary_for_tax", "tax", "transfer_salary", "transfer_reimbursement", "transfer_insurance", "transfer_total"]
         :return:
         """
+        self.table_edited = False
         is_chinese = self.is_waiguoren.get() == "否"
         uid = self.uid.get()
         salary = float(self.salary.get())
@@ -244,6 +266,9 @@ class MyApplication(object):
         if not folder:
             messagebox.showinfo("警告", "你还没选要把excel存在哪啦")
             return
+        if self.table_edited:
+            messagebox.showinfo("警告", "你上次修改过后还没从新计算哦")
+            return
         file_path = os.path.join(folder, "{}年{}月薪酬详情表格{}.xlsx".format(
             self.default_year.get(),
             self.default_month.get(),
@@ -284,6 +309,9 @@ class MyApplication(object):
     def _select_folder(self, *args, **kwargs):
         folder = askdirectory()
         self.folder.set(folder)
+
+    def _table_changed(self, *args, **kwargs):
+        self.table_edited = True
 
 
 if __name__ == '__main__':

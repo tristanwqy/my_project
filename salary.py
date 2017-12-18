@@ -121,7 +121,7 @@ class SalaryCalculator(object):
                 "工资+补贴+报销":   self.real_total_salary,
                 "社保减扣":       self.social_security_total,
                 "公积金减扣":      self.housing_fund,
-                "基础薪金(计税)":   self.base_salary,
+                "基础薪金":   self.base_salary,
                 "税前工资":       self.salary_for_tax,
                 "代扣个人所得税":    self.tax,
                 "实发转账工资":     self.transfer_salary,
