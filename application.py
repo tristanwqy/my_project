@@ -63,8 +63,8 @@ class MyApplication(object):
         row = 4
         self.folder = tk.StringVar()
         ttk.Label(self.root, text="保存excel的文件夹:").grid(row=row, column=0)
-        ttk.Entry(self.root, textvariable=self.folder, width=12).grid(row=row, column=1)
-        ttk.Button(self.root, text="选择", command=self._select_folder).grid(row=row, column=2)
+        ttk.Entry(self.root, textvariable=self.folder, width=60).grid(row=row, column=1, columnspan=5)
+        ttk.Button(self.root, text="选择", command=self._select_folder).grid(row=row, column=6)
 
     def init_person_detail_entries(self, row=6):
         # 是否歪果仁
