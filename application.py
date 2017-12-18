@@ -110,10 +110,11 @@ class MyApplication(object):
             self.export_single_excel_button["state"] = 'disabled'
         self.export_single_excel_button.grid(column=1, row=row)
 
-        self.export_all_excel_button = ttk.Button(self.root, text="导出所有已编辑人的excel", command=self._bind_table_to_salary_instance)
-        if not self.selected_person:
-            self.export_all_excel_button["state"] = 'disabled'
-        self.export_all_excel_button.grid(column=2, row=row)
+        # 还没做好这个功能
+        # self.export_all_excel_button = ttk.Button(self.root, text="导出所有已编辑人的excel", command=self._bind_table_to_salary_instance)
+        # if not self.selected_person:
+        #     self.export_all_excel_button["state"] = 'disabled'
+        # self.export_all_excel_button.grid(column=2, row=row)
 
     def init_data(self):
         self.selected_person = None
@@ -138,7 +139,7 @@ class MyApplication(object):
         # 按钮启用
         self.recalculate_button["state"] = 'active'
         self.export_single_excel_button["state"] = 'active'
-        self.export_all_excel_button["state"] = 'active'
+        # self.export_all_excel_button["state"] = 'active'
         if self.selected_person not in self.salary_dict:
             if self.selected_person.lower() in ["jakie", "孔明"]:
                 self.is_waiguoren.set("是")
@@ -154,7 +155,7 @@ class MyApplication(object):
                                                working_day=int(self.default_working_day.get()),
                                                present_working_day=int(self.default_working_day.get()),
                                                base_salary=10400,
-                                               pension=0,
+                                               pension=5100,
                                                reimbursement=0,
                                                yibao_level=2,
                                                housing_fund_rate=0.05,
@@ -240,7 +241,9 @@ class MyApplication(object):
 
     def _export_single_excel(self, *args, **kwargs):
         folder = self.folder.get()
-        print(folder)
+        if not folder:
+            messagebox.showinfo("警告", "你还没选要把excel存在哪啦")
+            return
         file_path = os.path.join(folder, "{}年{}月薪酬详情表格{}.xlsx".format(
             self.default_year.get(),
             self.default_month.get(),
