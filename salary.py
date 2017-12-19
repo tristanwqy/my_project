@@ -6,23 +6,27 @@ class SocialSecurity(object):
     http://news.vobao.com/zhuanti/885553609845687774.shtml
     """
     LOWEST_SALARY = 2130
-    SHENZHEN_AVAERAGE_SALARY = 6753
 
-    def __init__(self, salary=None, housing_fund_rate=0.05, level=2):
+    def __init__(self, salary=None, housing_fund_rate=0.05, level=3, is_shenzhen=False):
+        if is_shenzhen:
+            SHENZHEN_AVAERAGE_SALARY = 7480 * 0.6
+        else:
+            SHENZHEN_AVAERAGE_SALARY = 7480
         if not salary:
             self.salary = self.LOWEST_SALARY
         else:
             self.salary = salary
         self.yanglao = 0.08 * self.salary
-        if level == 1:
-            self.yiliao = 0.02 * self.SHENZHEN_AVAERAGE_SALARY * 0.6
-        elif level == 2:
-            self.yiliao = 0.002 * self.SHENZHEN_AVAERAGE_SALARY * 0.6
+        if is_shenzhen or level == 1:
+            self.yiliao = 0.02 * SHENZHEN_AVAERAGE_SALARY
+        elif not is_shenzhen and level == 2:
+            self.yiliao = 0.002 * SHENZHEN_AVAERAGE_SALARY
+        elif not is_shenzhen and level == 3:
+            self.yiliao = 0.001 * SHENZHEN_AVAERAGE_SALARY
         else:
-            self.yiliao = 0.001 * self.SHENZHEN_AVAERAGE_SALARY * 0.6
+            raise Exception
         self.shiye = 0.005 * self.LOWEST_SALARY
-        self.gongshang = 0.014 * self.salary
-        self.security_total = self.yanglao + self.yiliao + self.shiye + self.gongshang
+        self.security_total = self.yanglao + self.yiliao + self.shiye
         self.housing_fund = housing_fund_rate * self.salary
 
 
@@ -61,6 +65,7 @@ class SalaryCalculator(object):
                  uid,  # 编号
                  name,  # 姓名
                  is_chinese,  # 是否中国人
+                 is_shenzhen,  # 是否深圳人
                  salary,  # 合计款项
                  salary_rate,  # 百分比（实习，正式）
                  working_day,  # 工作日数
@@ -88,9 +93,17 @@ class SalaryCalculator(object):
         # 计算社保和公积金扣减
         self.yibao_level = yibao_level
         self.housing_fund_rate = housing_fund_rate
-        social_security = SocialSecurity(salary=social_security_base, housing_fund_rate=housing_fund_rate, level=yibao_level)
-        self.social_security_total = social_security.security_total
-        self.housing_fund = social_security.housing_fund
+        if not is_chinese:
+            # 歪果仁不交社保
+            self.social_security_total = 0
+            self.housing_fund = 0
+        else:
+            social_security = SocialSecurity(salary=social_security_base,
+                                             housing_fund_rate=housing_fund_rate,
+                                             level=yibao_level,
+                                             is_shenzhen=is_shenzhen)
+            self.social_security_total = social_security.security_total
+            self.housing_fund = social_security.housing_fund
 
         # 补贴、报销
         self.pension = pension
@@ -121,7 +134,7 @@ class SalaryCalculator(object):
                 "工资+补贴+报销":   self.real_total_salary,
                 "社保减扣":       self.social_security_total,
                 "公积金减扣":      self.housing_fund,
-                "基础薪金":   self.base_salary,
+                "基础薪金":       self.base_salary,
                 "税前工资":       self.salary_for_tax,
                 "代扣个人所得税":    self.tax,
                 "实发转账工资":     self.transfer_salary,
@@ -132,10 +145,12 @@ class SalaryCalculator(object):
 
 
 if __name__ == '__main__':
+    print(7780 * 0.6)
     salary_instance = SalaryCalculator(default_max_transfer_value=10000,
                                        uid="编号别忘了啦",
                                        name="人",
                                        is_chinese=True,
+                                       is_shenzhen=False,
                                        salary=30000,
                                        salary_rate=1.0,
                                        working_day=22,
@@ -147,26 +162,32 @@ if __name__ == '__main__':
                                        housing_fund_rate=0.05,
                                        social_security_base=2130,
                                        transfer_reimbursement=10000)
+    print(salary_instance.social_security_total)
+    ss = SocialSecurity(is_shenzhen=False)
+    print(ss.shiye)
+    print(ss.yanglao)
+    print(ss.yiliao)
+    print(ss.security_total)
 
-    import pandas as pd
-
-    columns = ["编号", "姓名", "合计款项", "正式\试用期工资占比", "本周工作日", "出勤天数", "本月应收款项",
-               "补贴", "报销", "工资+补贴+报销", "社保减扣", "公积金减扣",
-               "基础薪金", "税前工资", "代扣个人所得税", "实发转账工资", "实发报销工资", "实发保险", "合计金额"]
-    data_dict = collections.OrderedDict()
-    salary_dict = salary_instance.export()
-    for column in columns:
-        if column in data_dict:
-            data_dict[column].append(salary_dict.get(column))
-        else:
-            data_dict[column] = [salary_dict.get(column)]
-    df = pd.DataFrame(data_dict)
-
-    writer = pd.ExcelWriter("test.xlsx", engine='xlsxwriter')
-    df.to_excel(writer, sheet_name='Sheet1', index=False)
-    workbook = writer.book
-    worksheet = writer.sheets['Sheet1']
-    for i, column in enumerate(columns):
-        width = max(len(column) * 2, 10)
-        worksheet.set_column(firstcol=i, lastcol=i, width=width)
-    writer.save()
+    # import pandas as pd
+    #
+    # columns = ["编号", "姓名", "合计款项", "正式\试用期工资占比", "本周工作日", "出勤天数", "本月应收款项",
+    #            "补贴", "报销", "工资+补贴+报销", "社保减扣", "公积金减扣",
+    #            "基础薪金", "税前工资", "代扣个人所得税", "实发转账工资", "实发报销工资", "实发保险", "合计金额"]
+    # data_dict = collections.OrderedDict()
+    # salary_dict = salary_instance.export()
+    # for column in columns:
+    #     if column in data_dict:
+    #         data_dict[column].append(salary_dict.get(column))
+    #     else:
+    #         data_dict[column] = [salary_dict.get(column)]
+    # df = pd.DataFrame(data_dict)
+    #
+    # writer = pd.ExcelWriter("test.xlsx", engine='xlsxwriter')
+    # df.to_excel(writer, sheet_name='Sheet1', index=False)
+    # workbook = writer.book
+    # worksheet = writer.sheets['Sheet1']
+    # for i, column in enumerate(columns):
+    #     width = max(len(column) * 2, 10)
+    #     worksheet.set_column(firstcol=i, lastcol=i, width=width)
+    # writer.save()
