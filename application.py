@@ -1,5 +1,6 @@
 import collections
 import datetime
+import json
 import os
 import tkinter as tk
 from tkinter import messagebox, ttk
@@ -139,6 +140,7 @@ class MyApplication(object):
     def init_data(self):
         self.selected_person = None
         self.salary_dict = dict()
+        self._load_salary_dict_from_cache()
 
     def init_combobox(self, row=5):
         ttk.Label(self.root, text="你选中的童鞋是").grid(column=0, row=row)
@@ -335,8 +337,20 @@ class MyApplication(object):
             result_dict = dict()
             for key, salary_instance in self.salary_dict.items():
                 result_dict[key] = salary_instance.export()
-            data = pd.json.dumps(result_dict)
+            data = json.dumps(result_dict)
             f.write(data)
+        with open("global.cache", "w+") as f:
+            global_dict = dict()
+            global_dict["default_max_transfer_value"] = float(self.default_max_transfer_value.get())
+            global_dict["default_salary"] = float(self.default_salary.get())
+            data = json.dumps(global_dict)
+            f.write(data)
+
+    def _load_salary_dict_from_cache(self):
+        with open("salary.cache", "r+") as f:
+            json_str = f.read()
+            salary_dict = json.loads(json_str)
+            print(salary_dict)
 
 
 if __name__ == '__main__':
