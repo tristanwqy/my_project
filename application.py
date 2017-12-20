@@ -287,7 +287,7 @@ class MyApplication(object):
             self.edited_people.append(self.selected_person)
         self._update_entry(self.edited_people_entry, self.edited_people)
 
-    def _export_single_excel(self, *args, selected_person=None, ask_confirm=True, **kwargs, ):
+    def _export_single_excel(self, *args, selected_person=None, ask_confirm=True, **kwargs):
         selected_person = selected_person or self.selected_person
         folder = self.folder.get()
         if not folder:
