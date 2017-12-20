@@ -55,14 +55,14 @@ class MyApplication(object):
         default_salary_label = ttk.Label(self.root, text="默认计算社保部分:")
         default_salary_label.grid(column=0, row=row)
         self.default_salary = ttk.Entry(self.root, width=12)
-        self.default_salary.insert(tk.END, '2130')
+        self.default_salary.insert(tk.END, self.default_salary_cache or '2130')
         self.default_salary.grid(column=1, row=row)
 
         row = 3
         default_max_transfer_value_label = ttk.Label(self.root, text="宛余设定的报销限额:")
         default_max_transfer_value_label.grid(column=0, row=row)
         self.default_max_transfer_value = ttk.Entry(self.root, width=12)
-        self.default_max_transfer_value.insert(tk.END, '10000')
+        self.default_max_transfer_value.insert(tk.END, self.default_max_transfer_value_cache or '10000')
         self.default_max_transfer_value.grid(column=1, row=row)
 
         row = 4
@@ -139,8 +139,7 @@ class MyApplication(object):
 
     def init_data(self):
         self.selected_person = None
-        self.salary_dict = dict()
-        self._load_salary_dict_from_cache()
+        self.default_max_transfer_value_cache, self.default_salary_cache, self.salary_dict = self._load_salary_dict_from_cache()
 
     def init_combobox(self, row=5):
         ttk.Label(self.root, text="你选中的童鞋是").grid(column=0, row=row)
@@ -347,10 +346,44 @@ class MyApplication(object):
             f.write(data)
 
     def _load_salary_dict_from_cache(self):
-        with open("salary.cache", "r+") as f:
-            json_str = f.read()
-            salary_dict = json.loads(json_str)
-            print(salary_dict)
+        if os.path.exists("global.cache"):
+            with open("global.cache", "r+") as f:
+                json_str = f.read()
+                global_dict = json.loads(json_str)
+                default_max_transfer_value_cache = global_dict["default_max_transfer_value"]
+                default_salary_cache = global_dict["default_salary"]
+        else:
+            default_max_transfer_value_cache = None
+            default_salary_cache = None
+        if os.path.exists("salary.cache"):
+            with open("salary.cache", "r+") as f:
+                json_str = f.read()
+                salary_dict_cache = dict()
+                salary_dict = json.loads(json_str)
+                for selected_person, salary_person_dict in salary_dict.items():
+                    is_chinese = selected_person not in self.foreigners
+                    is_shenzhen = selected_person in self.shenzheners
+                    yibao_level = 1 if is_shenzhen else 3
+                    salary_instance = SalaryCalculator(default_max_transfer_value=default_max_transfer_value_cache,
+                                                       uid=salary_person_dict["编号"],
+                                                       name=selected_person,
+                                                       is_chinese=is_chinese,
+                                                       is_shenzhen=is_shenzhen,
+                                                       salary=salary_person_dict["合计款项"],
+                                                       salary_rate=salary_person_dict["正式/试用期工资占比"],
+                                                       working_day=22,
+                                                       present_working_day=22,
+                                                       base_salary=salary_person_dict["基础薪金"],
+                                                       pension=salary_person_dict["补贴"],
+                                                       reimbursement=salary_person_dict["报销"],
+                                                       yibao_level=yibao_level,
+                                                       housing_fund_rate=0.05,
+                                                       social_security_base=default_salary_cache,
+                                                       transfer_reimbursement=salary_person_dict["实发报销工资"])
+                    salary_dict_cache[selected_person] = salary_instance
+        else:
+            salary_dict_cache = dict()
+        return default_max_transfer_value_cache, default_salary_cache, salary_dict_cache
 
 
 if __name__ == '__main__':

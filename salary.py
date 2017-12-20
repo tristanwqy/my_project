@@ -123,7 +123,7 @@ class SalaryCalculator(object):
         return {"编号":         self.uid,
                 "姓名":         self.name,
                 "合计款项":       self.salary,
-                "正式\试用期工资占比": self.salary_rate,
+                "正式/试用期工资占比": self.salary_rate,
                 "本周工作日":      self.working_day,
                 "出勤天数":       self.present_working_day,
                 "本月应收款项":     self.real_salary,
