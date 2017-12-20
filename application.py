@@ -18,7 +18,7 @@ class MyApplication(object):
         self.root.title("随便试试")
         self.persons = ["何宛余", "杨小荻", "李春", "郑夏丽", "魏启赟", "曾古", "邓燊", "孔明", "Jackie", "杨蕴琳"]
         self.foreigners = ["孔明", "Jackie"]
-        self.shenzheners = ["曾古", "杨蕴琳"]
+        self.shenzheners = ["曾古", "杨蕴琳", "邓燊"]
         self.table_edited = True
         self.edited_people = []
         self.init_data()
@@ -77,7 +77,6 @@ class MyApplication(object):
         ttk.Label(self.root, text="是否歪果仁").grid(column=0, row=row)
         tk_bool = tk.StringVar()
         self.is_waiguoren = ttk.Combobox(self.root, width=10, textvariable=tk_bool, values=("是", "否"))
-        self.is_waiguoren.current(1)
         self.is_waiguoren.grid(column=0, row=row + 1)
 
         ttk.Label(self.root, text="是否深圳户口").grid(column=1, row=row)
@@ -173,6 +172,7 @@ class MyApplication(object):
             # 按钮启用
             self.recalculate_button["state"] = 'active'
             self.export_single_excel_button["state"] = 'active'
+            self.export_all_excel_button["state"] = "active"
             # self.export_all_excel_button["state"] = 'active'
             if self.selected_person not in self.salary_dict:
                 if self.selected_person in self.foreigners:
@@ -236,6 +236,8 @@ class MyApplication(object):
         self._update_entry(self.transfer_reimbursement, salary_instance.transfer_reimbursement)
         self._update_entry(self.transfer_insurance, salary_instance.transfer_insurance)
         self._update_entry(self.transfer_total, salary_instance.transfer_total)
+        self.is_waiguoren.set("是" if not salary_instance.is_chinese else "否")
+        self.is_shenzhenren.set("是" if salary_instance.is_shenzhen else "否")
 
     def _bind_table_to_salary_instance(self, *args, **kwargs):
         """
