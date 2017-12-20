@@ -20,6 +20,7 @@ class MyApplication(object):
         self.foreigners = ["孔明", "Jackie"]
         self.shenzheners = ["曾古", "杨蕴琳"]
         self.table_edited = True
+        self.edited_people = []
         self.init_data()
         self.init_app()
         self.root.mainloop()
@@ -71,7 +72,7 @@ class MyApplication(object):
         ttk.Entry(self.root, textvariable=self.folder, width=60).grid(row=row, column=1, columnspan=5)
         ttk.Button(self.root, text="选择", command=self._select_folder).grid(row=row, column=6)
 
-    def init_person_detail_entries(self, row=6):
+    def init_person_detail_entries(self, row=7):
         # 是否歪果仁
         ttk.Label(self.root, text="是否歪果仁").grid(column=0, row=row)
         tk_bool = tk.StringVar()
@@ -110,7 +111,7 @@ class MyApplication(object):
             entry.grid(column=this_column, row=this_row + 1)
             entry.bind("<KeyRelease>", self._table_changed)
 
-    def init_button(self, row=10):
+    def init_button(self, row=11):
         self.recalculate_button = ttk.Button(self.root, text="重新计算", command=self._bind_table_to_salary_instance)
         if not self.selected_person:
             self.recalculate_button["state"] = 'disabled'
@@ -121,21 +122,24 @@ class MyApplication(object):
             self.export_single_excel_button["state"] = 'disabled'
         self.export_single_excel_button.grid(column=1, row=row)
 
-        # 还没做好这个功能
-        # self.export_all_excel_button = ttk.Button(self.root, text="导出所有已编辑人的excel", command=self._bind_table_to_salary_instance)
-        # if not self.selected_person:
-        #     self.export_all_excel_button["state"] = 'disabled'
-        # self.export_all_excel_button.grid(column=2, row=row)
+        self.export_all_excel_button = ttk.Button(self.root, text="导出所有已编辑同学们的excel", command=self._export_all_edited_excel)
+        if not self.selected_person:
+            self.export_all_excel_button["state"] = 'disabled'
+        self.export_all_excel_button.grid(column=2, row=row)
 
     def init_info(self):
+        ttk.Label(self.root, text="已经计算过的盘友们是:").grid(column=0, row=6)
+        self.edited_people_entry = ttk.Entry(self.root, width=60)
+        self.edited_people_entry["state"] = 'readonly'
+        self.edited_people_entry.grid(column=1, row=6, columnspan=8)
         info1 = ttk.Entry(self.root, width=80)
         info1.insert(tk.END, "社保计算方式参考: https://wenku.baidu.com/view/6dded89c710abb68a98271fe910ef12d2bf9a96c.html")
         info1["state"] = 'readonly'
-        info1.grid(column=0, row=11, columnspan=8)
+        info1.grid(column=0, row=12, columnspan=8)
         info2 = ttk.Entry(self.root, width=80)
         info2.insert(tk.END, "个人所得税计算参考：http://www.gerensuodeshui.cn/")
         info2["state"] = 'readonly'
-        info2.grid(column=0, row=12, columnspan=8)
+        info2.grid(column=0, row=13, columnspan=8)
 
     def init_data(self):
         self.selected_person = None
@@ -256,7 +260,6 @@ class MyApplication(object):
         # 基础薪金
         base_salary = float(self.base_salary.get())
         transfer_reimbursement = float(self.transfer_reimbursement.get())
-        real_total_salary = float(self.real_total_salary.get())
         # 计算社保的部分
         social_security_base = float(self.default_salary.get())
         new_salary_instance = SalaryCalculator(default_max_transfer_value=float(self.default_max_transfer_value.get()),
@@ -278,6 +281,8 @@ class MyApplication(object):
         self.salary_dict[self.selected_person] = new_salary_instance
         self._refresh_salary_table(salary_instance=new_salary_instance)
         self._save_current_stats()
+        self.edited_people.append(self.selected_person)
+        self._update_entry(self.edited_people_entry, self.edited_people)
 
     def _export_single_excel(self, *args, **kwargs):
         folder = self.folder.get()
@@ -313,6 +318,38 @@ class MyApplication(object):
                 width = max(len(column) * 2, 10)
                 worksheet.set_column(firstcol=i, lastcol=i, width=width)
             writer.save()
+
+    def _export_all_edited_excel(self, *args, **kwargs):
+        folder = self.folder.get()
+        if not folder:
+            messagebox.showinfo("警告", "你还没选要把excel存在哪啦")
+            return
+        file_path = os.path.join(folder, "小库科技{}年{}月薪酬详情表格总表.xlsx".format(
+            self.default_year.get(),
+            self.default_month.get()))
+        result = messagebox.askokcancel('提示', "你真的要生成薪酬总表么，当前编辑过的同学们有{}\nexcel将会存储在:\n{}".format(self.edited_people, file_path))
+        if result:
+            columns = ["编号", "姓名", "合计款项", "正式\试用期工资占比", "本周工作日", "出勤天数", "本月应收款项",
+                       "补贴", "报销", "工资+补贴+报销", "社保减扣", "公积金减扣",
+                       "基础薪金", "税前工资", "代扣个人所得税", "实发转账工资", "实发报销工资", "实发保险", "合计金额"]
+            data_dict = collections.OrderedDict()
+            for selected_person in self.edited_people:
+                salary_instance = self.salary_dict[selected_person]
+                salary_dict = salary_instance.export()
+                for column in columns:
+                    if column in data_dict:
+                        data_dict[column].append(salary_dict.get(column))
+                    else:
+                        data_dict[column] = [salary_dict.get(column)]
+                df = pd.DataFrame(data_dict)
+
+                writer = pd.ExcelWriter(file_path, engine='xlsxwriter')
+                df.to_excel(writer, sheet_name='Sheet1', index=False)
+                worksheet = writer.sheets['Sheet1']
+                for i, column in enumerate(columns):
+                    width = max(len(column) * 2, 10)
+                    worksheet.set_column(firstcol=i, lastcol=i, width=width)
+                writer.save()
 
     def _update_entry(self, entry, new_value):
         readonly = str(entry["state"]) == 'readonly'
