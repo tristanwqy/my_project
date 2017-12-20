@@ -276,6 +276,7 @@ class MyApplication(object):
                                                transfer_reimbursement=transfer_reimbursement)
         self.salary_dict[self.selected_person] = new_salary_instance
         self._refresh_salary_table(salary_instance=new_salary_instance)
+        self._save_current_stats()
 
     def _export_single_excel(self, *args, **kwargs):
         folder = self.folder.get()
@@ -328,6 +329,14 @@ class MyApplication(object):
 
     def _table_changed(self, *args, **kwargs):
         self.table_edited = True
+
+    def _save_current_stats(self):
+        with open("salary.cache", "w+") as f:
+            result_dict = dict()
+            for key, salary_instance in self.salary_dict.items():
+                result_dict[key] = salary_instance.export()
+            data = pd.json.dumps(result_dict)
+            f.write(data)
 
 
 if __name__ == '__main__':

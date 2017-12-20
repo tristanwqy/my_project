@@ -1,6 +1,3 @@
-import collections
-
-
 class SocialSecurity(object):
     """
     http://news.vobao.com/zhuanti/885553609845687774.shtml
@@ -84,6 +81,7 @@ class SalaryCalculator(object):
         self.uid = uid
         self.name = name
         self.is_chinese = is_chinese
+        self.is_shenzhen = is_shenzhen
         self.salary = salary
         self.salary_rate = salary_rate
         self.present_working_day = present_working_day
@@ -145,49 +143,5 @@ class SalaryCalculator(object):
 
 
 if __name__ == '__main__':
-    print(7780 * 0.6)
-    salary_instance = SalaryCalculator(default_max_transfer_value=10000,
-                                       uid="编号别忘了啦",
-                                       name="人",
-                                       is_chinese=True,
-                                       is_shenzhen=False,
-                                       salary=30000,
-                                       salary_rate=1.0,
-                                       working_day=22,
-                                       present_working_day=22,
-                                       base_salary=10400,
-                                       pension=0,
-                                       reimbursement=0,
-                                       yibao_level=2,
-                                       housing_fund_rate=0.05,
-                                       social_security_base=2130,
-                                       transfer_reimbursement=10000)
-    print(salary_instance.social_security_total)
-    ss = SocialSecurity(is_shenzhen=False)
-    print(ss.shiye)
-    print(ss.yanglao)
-    print(ss.yiliao)
-    print(ss.security_total)
-
-    # import pandas as pd
-    #
-    # columns = ["编号", "姓名", "合计款项", "正式\试用期工资占比", "本周工作日", "出勤天数", "本月应收款项",
-    #            "补贴", "报销", "工资+补贴+报销", "社保减扣", "公积金减扣",
-    #            "基础薪金", "税前工资", "代扣个人所得税", "实发转账工资", "实发报销工资", "实发保险", "合计金额"]
-    # data_dict = collections.OrderedDict()
-    # salary_dict = salary_instance.export()
-    # for column in columns:
-    #     if column in data_dict:
-    #         data_dict[column].append(salary_dict.get(column))
-    #     else:
-    #         data_dict[column] = [salary_dict.get(column)]
-    # df = pd.DataFrame(data_dict)
-    #
-    # writer = pd.ExcelWriter("test.xlsx", engine='xlsxwriter')
-    # df.to_excel(writer, sheet_name='Sheet1', index=False)
-    # workbook = writer.book
-    # worksheet = writer.sheets['Sheet1']
-    # for i, column in enumerate(columns):
-    #     width = max(len(column) * 2, 10)
-    #     worksheet.set_column(firstcol=i, lastcol=i, width=width)
-    # writer.save()
+    with open("1.txt", "w+") as f:
+        f.write("hello2")
