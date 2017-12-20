@@ -85,7 +85,7 @@ class MyApplication(object):
         self.is_shenzhenren.grid(column=1, row=row + 1)
         # self.is_waiguoren.bind("<<ComboboxSelected>>", self._show_person_chosen2)
 
-        self.columns = ["编号", "姓名", "合计款项", "正式\试用期工资占比", "本周工作日", "出勤天数", "本月应收款项",
+        self.columns = ["编号", "姓名", "合计款项", "正式/试用期工资占比", "本周工作日", "出勤天数", "本月应收款项",
                         "补贴", "报销", "工资+补贴+报销", "医保档次", "社保减扣", "公积金比例", "公积金减扣",
                         "基础薪金(计税部分)", "税前工资", "代扣个人所得税", "实发转账工资", "实发报销工资", "实发保险", "合计金额"]
         self.eng_columns = ["uid", "name", "salary", "salary_rate", "working_day", "present_working_day", "real_salary",
@@ -111,7 +111,7 @@ class MyApplication(object):
             entry.bind("<KeyRelease>", self._table_changed)
 
     def init_button(self, row=11):
-        self.recalculate_button = ttk.Button(self.root, text="重新计算", command=self._bind_table_to_salary_instance)
+        self.recalculate_button = ttk.Button(self.root, text="确认并重新计算", command=self._bind_table_to_salary_instance)
         if not self.selected_person:
             self.recalculate_button["state"] = 'disabled'
         self.recalculate_button.grid(column=0, row=row)
@@ -283,10 +283,12 @@ class MyApplication(object):
         self.salary_dict[self.selected_person] = new_salary_instance
         self._refresh_salary_table(salary_instance=new_salary_instance)
         self._save_current_stats()
-        self.edited_people.append(self.selected_person)
+        if self.selected_person not in self.edited_people:
+            self.edited_people.append(self.selected_person)
         self._update_entry(self.edited_people_entry, self.edited_people)
 
-    def _export_single_excel(self, *args, **kwargs):
+    def _export_single_excel(self, *args, selected_person=None, ask_confirm=True, **kwargs, ):
+        selected_person = selected_person or self.selected_person
         folder = self.folder.get()
         if not folder:
             messagebox.showinfo("警告", "你还没选要把excel存在哪啦")
@@ -297,14 +299,17 @@ class MyApplication(object):
         file_path = os.path.join(folder, "{}年{}月薪酬详情表格{}.xlsx".format(
             self.default_year.get(),
             self.default_month.get(),
-            self.selected_person))
-        result = messagebox.askokcancel('提示', "你真的要生成{}的薪酬excel么\n{}的excel将会存储在:\n{}".format(self.selected_person, self.selected_person, file_path))
+            selected_person))
+        if ask_confirm:
+            result = messagebox.askokcancel('提示', "你真的要生成{}的薪酬excel么\n{}的excel将会存储在:\n{}".format(selected_person, selected_person, file_path))
+        else:
+            result = True
         if result:
-            columns = ["编号", "姓名", "合计款项", "正式\试用期工资占比", "本周工作日", "出勤天数", "本月应收款项",
+            columns = ["编号", "姓名", "合计款项", "正式/试用期工资占比", "本周工作日", "出勤天数", "本月应收款项",
                        "补贴", "报销", "工资+补贴+报销", "社保减扣", "公积金减扣",
                        "基础薪金", "税前工资", "代扣个人所得税", "实发转账工资", "实发报销工资", "实发保险", "合计金额"]
             data_dict = collections.OrderedDict()
-            salary_instance = self.salary_dict[self.selected_person]
+            salary_instance = self.salary_dict[selected_person]
             salary_dict = salary_instance.export()
             for column in columns:
                 if column in data_dict:
@@ -329,13 +334,14 @@ class MyApplication(object):
         file_path = os.path.join(folder, "小库科技{}年{}月薪酬详情表格总表.xlsx".format(
             self.default_year.get(),
             self.default_month.get()))
-        result = messagebox.askokcancel('提示', "你真的要生成薪酬总表么，当前编辑过的同学们有{}\nexcel将会存储在:\n{}".format(self.edited_people, file_path))
+        result = messagebox.askokcancel('提示', "你真的要生成薪酬总表么，当前编辑过的同学们有{}\nexcel将会存储在:\n{}".format(self.edited_people, folder))
         if result:
-            columns = ["编号", "姓名", "合计款项", "正式\试用期工资占比", "本周工作日", "出勤天数", "本月应收款项",
+            columns = ["编号", "姓名", "合计款项", "正式/试用期工资占比", "本周工作日", "出勤天数", "本月应收款项",
                        "补贴", "报销", "工资+补贴+报销", "社保减扣", "公积金减扣",
                        "基础薪金", "税前工资", "代扣个人所得税", "实发转账工资", "实发报销工资", "实发保险", "合计金额"]
             data_dict = collections.OrderedDict()
             for selected_person in self.edited_people:
+                self._export_single_excel(selected_person=selected_person, ask_confirm=False)
                 salary_instance = self.salary_dict[selected_person]
                 salary_dict = salary_instance.export()
                 for column in columns:
