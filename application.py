@@ -16,9 +16,66 @@ class MyApplication(object):
         self.root = tk.Tk()
         self.root.geometry("1920x1080")
         self.root.title("随便试试")
-        self.persons = ["何宛余", "杨小荻", "李春", "郑夏丽", "魏启赟", "曾古", "邓燊", "孔明", "Jackie", "杨蕴琳"]
-        self.foreigners = ["孔明", "Jackie"]
-        self.shenzheners = ["曾古", "杨蕴琳", "邓燊"]
+        self.persons = [
+            # 小库
+            "何宛余",
+            "杨小荻",
+            "李春",
+            "郑夏丽",
+            "曾古",
+            "魏启赟",
+            "吕沙",
+            "邓燊",
+            "刘轲",
+            "聂广洋",
+            "杨蕴琳",
+            "谈仁超",
+            "王箫",
+            "孔明",
+            "吴磊",
+            # 建筑
+            "刘云祥",
+            "吴佳晶",
+            "杨良崧",
+            "黄辉雄",
+            "罗佳敏",
+            "李政",
+            "沈睿卿",
+            # 阿姨
+            "王梅香",
+        ]
+        self.uids = {
+            # 小库
+            "何宛余": "001",
+            "杨小荻": "002",
+            "李春":  "003",
+            "郑夏丽": "101",
+            "曾古":  "102",
+            "魏启赟": "103",
+            "吕沙":  "104",
+            "邓燊":  "105",
+            "刘轲":  "106",
+            "聂广洋": "107",
+            "杨蕴琳": "108",
+            "谈仁超": "109",
+            "王箫":  "110",
+            "孔明":  "I102",
+            "吴磊":  "I101",
+            # 建筑
+            "刘云祥": "103",
+            "吴佳晶": "101",
+            "杨良崧": "102",
+            "黄辉雄": "104",
+            "罗佳敏": "105",
+            "李政":  "I104",
+            "沈睿卿": "I105",
+            # 阿姨
+            "王梅香": "A",
+        }
+
+        self.foreigners = ["孔明", "杨良崧"]
+        self.shenzheners = ["吕沙", "刘轲", "聂广洋", "何宛余", "王箫", "曾古", "杨蕴琳", "邓燊", "罗佳敏", "吴佳晶", "黄辉雄", "李政"]
+        self.interns = ["吴磊", "李政", "孔明", "沈睿卿"]
         self.table_edited = True
         self.edited_people = []
         self.init_data()
@@ -73,32 +130,22 @@ class MyApplication(object):
         ttk.Button(self.root, text="选择", command=self._select_folder).grid(row=row, column=6)
 
     def init_person_detail_entries(self, row=7):
-        # 是否歪果仁
-        ttk.Label(self.root, text="是否歪果仁").grid(column=0, row=row)
-        tk_bool = tk.StringVar()
-        self.is_waiguoren = ttk.Combobox(self.root, width=10, textvariable=tk_bool, values=("是", "否"))
-        self.is_waiguoren.grid(column=0, row=row + 1)
-
-        ttk.Label(self.root, text="是否深圳户口").grid(column=1, row=row)
-        tk_bool2 = tk.StringVar()
-        self.is_shenzhenren = ttk.Combobox(self.root, width=10, textvariable=tk_bool2, values=("是", "否"))
-        self.is_shenzhenren.grid(column=1, row=row + 1)
-        # self.is_waiguoren.bind("<<ComboboxSelected>>", self._show_person_chosen2)
-
-        self.columns = ["编号", "姓名", "合计款项", "正式/试用期工资占比", "本周工作日", "出勤天数", "本月应收款项",
+        self.columns = ["是否中国人", "是否深户", "是否实习生", "编号", "姓名", "合计款项", "正式/试用期工资占比", "本周工作日", "出勤天数", "本月应收款项",
                         "补贴", "报销", "工资+补贴+报销", "医保档次", "社保减扣", "公积金比例", "公积金减扣",
                         "基础薪金(计税部分)", "税前工资", "代扣个人所得税", "实发转账工资", "实发报销工资", "实发保险", "合计金额"]
-        self.eng_columns = ["uid", "name", "salary", "salary_rate", "working_day", "present_working_day", "real_salary",
+        self.eng_columns = ["is_chinese", "is_shenzhen", "is_intern", "uid", "name", "salary", "salary_rate", "working_day", "present_working_day",
+                            "real_salary",
                             "pension", "reimbursement", "real_total_salary", "yibao_level", "social_security_total", "housing_fund_rate", "housing_fund",
                             "base_salary", "salary_for_tax", "tax", "transfer_salary", "transfer_reimbursement", "transfer_insurance", "transfer_total"]
 
-        self.read_only_columns = ["name", "real_salary", "working_day", "yibao_level", "real_total_salary", "social_security_total", "housing_fund",
+        self.read_only_columns = ["is_chinese", "is_shenzhen", "is_intern", "uid", "name", "real_salary", "working_day", "yibao_level", "real_total_salary",
+                                  "social_security_total", "housing_fund",
                                   "salary_for_tax", "tax",
                                   "transfer_insurance", "transfer_total"]
 
         max_column_per_line = 12
         for i, column in enumerate(self.columns):
-            j = i + 2
+            j = i
             this_row = row + int(j / max_column_per_line) * 2
             this_column = j % max_column_per_line
             ttk.Label(self.root, text=column, width=18).grid(column=this_column, row=this_row, ipadx=2, ipady=2, sticky="s")
@@ -128,9 +175,9 @@ class MyApplication(object):
 
     def init_info(self):
         ttk.Label(self.root, text="已经计算过的盘友们是:").grid(column=0, row=6)
-        self.edited_people_entry = ttk.Entry(self.root, width=60)
+        self.edited_people_entry = ttk.Entry(self.root, width=180)
         self.edited_people_entry["state"] = 'readonly'
-        self.edited_people_entry.grid(column=1, row=6, columnspan=8)
+        self.edited_people_entry.grid(column=1, row=6, columnspan=10)
         info1 = ttk.Entry(self.root, width=80)
         info1.insert(tk.END, "社保计算方式参考: https://wenku.baidu.com/view/6dded89c710abb68a98271fe910ef12d2bf9a96c.html")
         info1["state"] = 'readonly'
@@ -154,6 +201,12 @@ class MyApplication(object):
         self.person_chosen = person_chosen
         self.person_chosen.bind("<<ComboboxSelected>>", self._update_person)
 
+    def _get_person_info(self, person_name):
+        return (self.uids[person_name],
+                "是" if person_name not in self.foreigners else "否",
+                "是" if person_name in self.shenzheners else "否",
+                "是" if person_name in self.interns else "否")
+
     def _update_person(self, event):
         result = True
         if self.table_edited and self.selected_person:
@@ -175,22 +228,14 @@ class MyApplication(object):
             self.export_all_excel_button["state"] = "active"
             # self.export_all_excel_button["state"] = 'active'
             if self.selected_person not in self.salary_dict:
-                if self.selected_person in self.foreigners:
-                    self.is_waiguoren.set("是")
-                else:
-                    self.is_waiguoren.set("否")
-                if self.selected_person in self.shenzheners:
-                    self.is_shenzhenren.set("是")
-                else:
-                    self.is_shenzhenren.set("否")
-                is_chinese = self.is_waiguoren.get() == "否"
-                is_shenzhen = self.is_shenzhenren.get() == "是"
-                yibao_level = 1 if is_shenzhen else 3
+                uid, is_chinese, is_shenzhen, is_intern = self._get_person_info(person_name=self.selected_person)
+                yibao_level = 1 if is_shenzhen == "是" else 3
                 salary_instance = SalaryCalculator(default_max_transfer_value=float(self.default_max_transfer_value.get()),
-                                                   uid="编号别忘了啦",
+                                                   uid=uid,
                                                    name=self.selected_person,
                                                    is_chinese=is_chinese,
                                                    is_shenzhen=is_shenzhen,
+                                                   is_intern=is_intern,
                                                    salary=30000,
                                                    salary_rate=1,
                                                    working_day=int(self.default_working_day.get()),
@@ -216,6 +261,9 @@ class MyApplication(object):
         :param salary_instance:
         :return:
         """
+        self._update_entry(self.is_chinese, "是" if salary_instance.is_chinese else "否")
+        self._update_entry(self.is_shenzhen, "是" if salary_instance.is_shenzhen else "否")
+        self._update_entry(self.is_intern, "是" if salary_instance.is_intern else "否")
         self._update_entry(self.uid, salary_instance.uid)
         self._update_entry(self.salary, salary_instance.salary)
         self._update_entry(self.salary_rate, salary_instance.salary_rate)
@@ -236,8 +284,6 @@ class MyApplication(object):
         self._update_entry(self.transfer_reimbursement, salary_instance.transfer_reimbursement)
         self._update_entry(self.transfer_insurance, salary_instance.transfer_insurance)
         self._update_entry(self.transfer_total, salary_instance.transfer_total)
-        self.is_waiguoren.set("是" if not salary_instance.is_chinese else "否")
-        self.is_shenzhenren.set("是" if salary_instance.is_shenzhen else "否")
 
     def _bind_table_to_salary_instance(self, *args, **kwargs):
         """
@@ -247,16 +293,14 @@ class MyApplication(object):
         :return:
         """
         self.table_edited = False
-        is_chinese = self.is_waiguoren.get() == "否"
-        is_shenzhen = self.is_shenzhenren.get() == "是"
-        uid = self.uid.get()
+        uid, is_chinese, is_shenzhen, is_intern = self._get_person_info(self.selected_person)
         salary = float(self.salary.get())
         salary_rate = float(self.salary_rate.get())
         working_day = int(self.working_day.get())
         present_working_day = int(self.present_working_day.get())
         pension = float(self.pension.get())
         reimbursement = float(self.reimbursement.get())
-        yibao_level = 1 if is_shenzhen else 3
+        yibao_level = 1 if is_shenzhen == "是" else 3
         housing_fund_rate = float(self.housing_fund_rate.get())
 
         # 基础薪金
@@ -269,6 +313,7 @@ class MyApplication(object):
                                                name=self.selected_person,
                                                is_chinese=is_chinese,
                                                is_shenzhen=is_shenzhen,
+                                               is_intern=is_intern,
                                                salary=salary,
                                                salary_rate=salary_rate,
                                                working_day=working_day,
@@ -406,14 +451,14 @@ class MyApplication(object):
                 salary_dict_cache = dict()
                 salary_dict = json.loads(json_str)
                 for selected_person, salary_person_dict in salary_dict.items():
-                    is_chinese = selected_person not in self.foreigners
-                    is_shenzhen = selected_person in self.shenzheners
-                    yibao_level = 1 if is_shenzhen else 3
+                    uid, is_chinese, is_shenzhen, is_intern = self._get_person_info(selected_person)
+                    yibao_level = 1 if is_shenzhen == "是" else 3
                     salary_instance = SalaryCalculator(default_max_transfer_value=default_max_transfer_value_cache,
                                                        uid=salary_person_dict["编号"],
                                                        name=selected_person,
                                                        is_chinese=is_chinese,
                                                        is_shenzhen=is_shenzhen,
+                                                       is_intern=is_intern,
                                                        salary=salary_person_dict["合计款项"],
                                                        salary_rate=salary_person_dict["正式/试用期工资占比"],
                                                        working_day=22,

@@ -63,6 +63,7 @@ class SalaryCalculator(object):
                  name,  # 姓名
                  is_chinese,  # 是否中国人
                  is_shenzhen,  # 是否深圳人
+                 is_intern,  # 是否实习生
                  salary,  # 合计款项
                  salary_rate,  # 百分比（实习，正式）
                  working_day,  # 工作日数
@@ -80,8 +81,9 @@ class SalaryCalculator(object):
                  ):
         self.uid = uid
         self.name = name
-        self.is_chinese = is_chinese
-        self.is_shenzhen = is_shenzhen
+        self.is_chinese = is_chinese == "是"
+        self.is_shenzhen = is_shenzhen == "是"
+        self.is_intern = is_intern == "是"
         self.salary = salary
         self.salary_rate = salary_rate
         self.present_working_day = present_working_day
@@ -91,15 +93,15 @@ class SalaryCalculator(object):
         # 计算社保和公积金扣减
         self.yibao_level = yibao_level
         self.housing_fund_rate = housing_fund_rate
-        if not is_chinese:
-            # 歪果仁不交社保
+        if not self.is_chinese or self.is_intern:
+            # 歪果仁不交社保和实习生
             self.social_security_total = 0
             self.housing_fund = 0
         else:
             social_security = SocialSecurity(salary=social_security_base,
                                              housing_fund_rate=housing_fund_rate,
                                              level=yibao_level,
-                                             is_shenzhen=is_shenzhen)
+                                             is_shenzhen=self.is_shenzhen)
             self.social_security_total = social_security.security_total
             self.housing_fund = social_security.housing_fund
 
@@ -112,7 +114,7 @@ class SalaryCalculator(object):
 
         self.salary_for_tax = self.base_salary - self.social_security_total - self.housing_fund
         self.tax = TaxCalculator.calculate_tax(total=self.salary_for_tax,
-                                               is_chinese=is_chinese)
+                                               is_chinese=self.is_chinese)
         self.transfer_salary = self.salary_for_tax - self.tax
         # 不可以超过宛余的上限, 也不可以超过了总计薪金减去基础薪金的差额
         self.transfer_reimbursement = min(transfer_reimbursement, default_max_transfer_value, self.real_total_salary - self.base_salary)
