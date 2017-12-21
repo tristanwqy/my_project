@@ -108,6 +108,7 @@ class MyApplication(object):
         self.default_working_day = ttk.Entry(self.root, width=12)
         self.default_working_day.insert(tk.END, '22')
         self.default_working_day.grid(column=1, row=row)
+        self.default_working_day.bind("<KeyRelease>", self._default_working_day_changed)
 
         row = 2
         default_salary_label = ttk.Label(self.root, text="默认计算社保部分:")
@@ -138,9 +139,9 @@ class MyApplication(object):
                             "pension", "reimbursement", "real_total_salary", "yibao_level", "social_security_total", "housing_fund_rate", "housing_fund",
                             "base_salary", "salary_for_tax", "tax", "transfer_salary", "transfer_reimbursement", "transfer_insurance", "transfer_total"]
 
-        self.read_only_columns = ["is_chinese", "is_shenzhen", "is_intern", "uid", "name", "real_salary", "working_day", "yibao_level", "real_total_salary",
+        self.read_only_columns = ["is_chinese", "is_shenzhen", "is_intern", "uid", "name", "real_salary", "yibao_level", "real_total_salary",
                                   "social_security_total", "housing_fund",
-                                  "salary_for_tax", "tax",
+                                  "salary_for_tax", "tax", "transfer_salary",
                                   "transfer_insurance", "transfer_total"]
 
         max_column_per_line = 12
@@ -173,19 +174,30 @@ class MyApplication(object):
             self.export_all_excel_button["state"] = 'disabled'
         self.export_all_excel_button.grid(column=2, row=row)
 
+        self.delete_cache_button = ttk.Button(self.root, text="清除所有缓存", command=self._delete_cache)
+        self.delete_cache_button.grid(column=3, row=row)
+
     def init_info(self):
         ttk.Label(self.root, text="已经计算过的盘友们是:").grid(column=0, row=6)
         self.edited_people_entry = ttk.Entry(self.root, width=180)
         self.edited_people_entry["state"] = 'readonly'
         self.edited_people_entry.grid(column=1, row=6, columnspan=10)
-        info1 = ttk.Entry(self.root, width=80)
+        info1 = ttk.Entry(self.root, width=120)
         info1.insert(tk.END, "社保计算方式参考: https://wenku.baidu.com/view/6dded89c710abb68a98271fe910ef12d2bf9a96c.html")
         info1["state"] = 'readonly'
         info1.grid(column=0, row=12, columnspan=8)
-        info2 = ttk.Entry(self.root, width=80)
+        info2 = ttk.Entry(self.root, width=120)
         info2.insert(tk.END, "个人所得税计算参考：http://www.gerensuodeshui.cn/")
         info2["state"] = 'readonly'
         info2.grid(column=0, row=13, columnspan=8)
+        ttk.Label(self.root, text="使用说明\n" +
+                                  "设定全局值（本周工作天数，默认社保计算部分，宛余的报销限额），选定一个excel的存放文件夹\n" +
+                                  "如果工作天数被修改了，那么之前的所有计算过的东西都得重来，尽量在开始之前就改好全局的变量\n" +
+                                  "然后选中任意一个人，初始默认的都是我的初始数据，需要重新填写的项有合同款项、工资占比(0-1)、\n" +
+                                  "出勤天数、补贴、报销、公积金比例（讲道理不用改）、基础薪金（用来计税的）、\n" +
+                                  "实发报销工资（如果填的数额太大了，会自动调小，一旦这个填了，保险部分的转账也会自己算出来）\n" +
+                                  "然后第一时间点确认并重新计算，确认没错可以到处当前人的excel，或者是切换到其他人，全部编辑完再一起导出\n" +
+                                  "选择一起导出的时候，还会附带一个总表，把所有编辑过的人（已经计算过的list里面）都放在一个表里面").grid(row=14, column=0, columnspan=5, rowspan=10)
 
     def init_data(self):
         self.selected_person = None
@@ -251,6 +263,7 @@ class MyApplication(object):
                 self._refresh_salary_table(salary_instance)
             else:
                 salary_instance = self.salary_dict[self.selected_person]
+                print(salary_instance.working_day, salary_instance.present_working_day)
                 self._refresh_salary_table(salary_instance)
 
     def _refresh_salary_table(self, salary_instance):
@@ -268,7 +281,7 @@ class MyApplication(object):
         self._update_entry(self.salary, salary_instance.salary)
         self._update_entry(self.salary_rate, salary_instance.salary_rate)
         self._update_entry(self.working_day, salary_instance.working_day)
-        self._update_entry(self.present_working_day, salary_instance.present_working_day),
+        self._update_entry(self.present_working_day, salary_instance.present_working_day)
         self._update_entry(self.real_salary, salary_instance.real_salary),
         self._update_entry(self.pension, salary_instance.pension),
         self._update_entry(self.reimbursement, salary_instance.reimbursement),
@@ -421,6 +434,16 @@ class MyApplication(object):
     def _table_changed(self, *args, **kwargs):
         self.table_edited = True
 
+    def _default_working_day_changed(self, *args, **kwargs):
+        print("本周工作日被改了")
+        self._update_entry(self.working_day, self.default_working_day.get())
+        self._update_entry(self.present_working_day, self.default_working_day.get())
+        for person, person_salary_dict in self.salary_dict.items():
+            person_salary_dict.working_day = self.default_working_day.get()
+            person_salary_dict.present_working_day = self.default_working_day.get()
+        self.edited_people = []
+        self._update_entry(self.edited_people_entry, self.edited_people)
+
     def _save_current_stats(self):
         with open("salary.cache", "w+") as f:
             result_dict = dict()
@@ -461,8 +484,8 @@ class MyApplication(object):
                                                        is_intern=is_intern,
                                                        salary=salary_person_dict["合计款项"],
                                                        salary_rate=salary_person_dict["正式/试用期工资占比"],
-                                                       working_day=22,
-                                                       present_working_day=22,
+                                                       working_day=int(salary_person_dict["本周工作日"]),
+                                                       present_working_day=int(salary_person_dict["出勤天数"]),
                                                        base_salary=salary_person_dict["基础薪金"],
                                                        pension=salary_person_dict["补贴"],
                                                        reimbursement=salary_person_dict["报销"],
@@ -474,6 +497,11 @@ class MyApplication(object):
         else:
             salary_dict_cache = dict()
         return default_max_transfer_value_cache, default_salary_cache, salary_dict_cache
+
+    def _delete_cache(self):
+        os.remove("salary.cache")
+        os.remove("global.cache")
+        self.salary_dict = dict()
 
 
 if __name__ == '__main__':

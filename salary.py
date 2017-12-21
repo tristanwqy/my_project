@@ -79,6 +79,7 @@ class SalaryCalculator(object):
                  housing_fund_rate=0.05,
                  social_security_base=None,  # 计算社保的工资，一般为2130
                  ):
+        self.default_max_transfer_value = default_max_transfer_value
         self.uid = uid
         self.name = name
         self.is_chinese = is_chinese == "是"
@@ -86,9 +87,9 @@ class SalaryCalculator(object):
         self.is_intern = is_intern == "是"
         self.salary = salary
         self.salary_rate = salary_rate
-        self.present_working_day = present_working_day
+        self.present_working_day = present_working_day if present_working_day <= working_day else working_day
         self.working_day = working_day
-        self.real_salary = self.salary * self.salary_rate * present_working_day / working_day
+        self.real_salary = self.salary * self.salary_rate * self.present_working_day / self.working_day
         self.social_security_base = social_security_base
         # 计算社保和公积金扣减
         self.yibao_level = yibao_level
