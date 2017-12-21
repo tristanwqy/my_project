@@ -499,8 +499,10 @@ class MyApplication(object):
         return default_max_transfer_value_cache, default_salary_cache, salary_dict_cache
 
     def _delete_cache(self):
-        os.remove("salary.cache")
-        os.remove("global.cache")
+        if os.path.exists("salary.cache"):
+            os.remove("salary.cache")
+        if os.path.exists("global.cache"):
+            os.remove("global.cache")
         self.salary_dict = dict()
 
 
