@@ -46,27 +46,27 @@ class MyApplication(object):
         ]
         self.uids = {
             # 小库
-            "何宛余": "001",
-            "杨小荻": "002",
-            "李春":  "003",
-            "郑夏丽": "101",
-            "曾古":  "102",
-            "魏启赟": "103",
-            "吕沙":  "104",
-            "邓燊":  "105",
-            "刘轲":  "106",
-            "聂广洋": "107",
-            "杨蕴琳": "108",
-            "谈仁超": "109",
-            "王箫":  "110",
+            "何宛余": "X001",
+            "杨小荻": "X002",
+            "李春":  "X003",
+            "郑夏丽": "X101",
+            "曾古":  "X102",
+            "魏启赟": "X103",
+            "吕沙":  "X104",
+            "邓燊":  "X105",
+            "刘轲":  "X106",
+            "聂广洋": "X107",
+            "杨蕴琳": "X108",
+            "谈仁超": "X109",
+            "王箫":  "X110",
             "孔明":  "I102",
             "吴磊":  "I101",
             # 建筑
-            "刘云祥": "103",
-            "吴佳晶": "101",
-            "杨良崧": "102",
-            "黄辉雄": "104",
-            "罗佳敏": "105",
+            "刘云祥": "F103",
+            "吴佳晶": "F101",
+            "杨良崧": "F102",
+            "黄辉雄": "F104",
+            "罗佳敏": "F105",
             "李政":  "I104",
             "沈睿卿": "I105",
             # 阿姨
@@ -136,8 +136,10 @@ class MyApplication(object):
                         "基础薪金(计税部分)", "税前工资", "代扣个人所得税", "实发转账工资", "实发报销工资", "实发保险", "合计金额"]
         self.eng_columns = ["is_chinese", "is_shenzhen", "is_intern", "uid", "name", "salary", "salary_rate", "working_day", "present_working_day",
                             "real_salary",
-                            "pension", "reimbursement", "real_total_salary", "yibao_level", "social_security_total", "housing_fund_rate", "housing_fund",
-                            "base_salary", "salary_for_tax", "tax", "transfer_salary", "transfer_reimbursement", "transfer_insurance", "transfer_total"]
+                            "pension", "reimbursement", "real_total_salary", "yibao_level", "social_security_total", "housing_fund_rate",
+                            "housing_fund",
+                            "base_salary", "salary_for_tax", "tax", "transfer_salary", "transfer_reimbursement", "transfer_insurance",
+                            "transfer_total"]
 
         self.read_only_columns = ["is_chinese", "is_shenzhen", "is_intern", "uid", "name", "real_salary", "yibao_level", "real_total_salary",
                                   "social_security_total", "housing_fund",
@@ -176,6 +178,7 @@ class MyApplication(object):
 
         self.delete_cache_button = ttk.Button(self.root, text="清除所有缓存", command=self._delete_cache)
         self.delete_cache_button.grid(column=3, row=row)
+        self.delete_cache_button["state"] = 'disable'
 
     def init_info(self):
         ttk.Label(self.root, text="已经计算过的盘友们是:").grid(column=0, row=6)
@@ -382,7 +385,10 @@ class MyApplication(object):
             for i, column in enumerate(columns):
                 width = max(len(column) * 2, 10)
                 worksheet.set_column(firstcol=i, lastcol=i, width=width)
-            writer.save()
+            try:
+                writer.save()
+            except Exception as e:
+                messagebox.showinfo("警告", "{}的excel正在被打开编辑，无法重新写入".format(selected_person))
 
     def _export_all_edited_excel(self, *args, **kwargs):
         folder = self.folder.get()
@@ -407,15 +413,18 @@ class MyApplication(object):
                         data_dict[column].append(salary_dict.get(column))
                     else:
                         data_dict[column] = [salary_dict.get(column)]
-                df = pd.DataFrame(data_dict)
+            df = pd.DataFrame(data_dict)
 
-                writer = pd.ExcelWriter(file_path, engine='xlsxwriter')
-                df.to_excel(writer, sheet_name='Sheet1', index=False)
-                worksheet = writer.sheets['Sheet1']
-                for i, column in enumerate(columns):
-                    width = max(len(column) * 2, 10)
-                    worksheet.set_column(firstcol=i, lastcol=i, width=width)
+            writer = pd.ExcelWriter(file_path, engine='xlsxwriter')
+            df.to_excel(writer, sheet_name='Sheet1', index=False)
+            worksheet = writer.sheets['Sheet1']
+            for i, column in enumerate(columns):
+                width = max(len(column) * 2, 10)
+                worksheet.set_column(firstcol=i, lastcol=i, width=width)
+            try:
                 writer.save()
+            except Exception as e:
+                messagebox.showinfo("警告", "excel{}正在被打开，无法重新写入".format(file_path))
 
     def _update_entry(self, entry, new_value):
         readonly = str(entry["state"]) == 'readonly'
