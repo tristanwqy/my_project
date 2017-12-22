@@ -27,7 +27,7 @@ options = {
 }
 
 setup(
-    name="run.exe",
+    name="XialiPayroll",
     options=options,
     version="0.0",
     description='测试版',

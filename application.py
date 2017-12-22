@@ -15,7 +15,7 @@ class MyApplication(object):
     def __init__(self):
         self.root = tk.Tk()
         self.root.geometry("1920x1080")
-        self.root.title("随便试试")
+        self.root.title("小姐姐薪酬系统")
         self.persons = [
             # 小库
             "何宛余",
